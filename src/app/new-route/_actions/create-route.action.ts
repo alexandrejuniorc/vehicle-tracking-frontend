@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidateTag } from "next/cache";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createRouteAction = async (state: any, formData: FormData) => {
   const BASE_URL = "http://localhost:3333";
@@ -38,6 +40,8 @@ export const createRouteAction = async (state: any, formData: FormData) => {
   if (!response.ok) {
     return { error: "Failed to create route" };
   }
+
+  revalidateTag("routes"); // revalidate routes
 
   return { success: true };
 };
