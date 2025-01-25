@@ -1,4 +1,4 @@
-import { searchDirections } from "./_actions/search-directions.action";
+import { MapNewRoute } from "./_components/map-new-route";
 import { NewRouteForm } from "./_components/new-route-form";
 
 type SearchParams = { source: string; destination: string };
@@ -7,7 +7,57 @@ interface NewRoutePageProps {
   searchParams: Promise<SearchParams>;
 }
 
-const NewRoutePage = async ({ searchParams }: NewRoutePageProps) => {
+export async function searchDirections(source: string, destination: string) {
+  const BASE_URL = "http://localhost:3333";
+
+  const [sourceResponse, destinationResponse] = await Promise.all([
+    fetch(`${BASE_URL}/places?text=${source}`, {
+      cache: "force-cache",
+      next: { revalidate: 1 * 60 * 60 * 24 }, // 1 day
+    }),
+    fetch(`${BASE_URL}/places?text=${destination}`, {
+      cache: "force-cache",
+      next: { revalidate: 1 * 60 * 60 * 24 }, // 1 day
+    }),
+  ]);
+
+  if (!sourceResponse.ok) {
+    throw new Error("Failed to fetch source data");
+  }
+
+  if (!destinationResponse.ok) {
+    throw new Error("Failed to fetch destination data");
+  }
+
+  const [sourceData, destinationData] = await Promise.all([
+    sourceResponse.json(),
+    destinationResponse.json(),
+  ]);
+
+  const placeSourceId = sourceData.candidates[0].place_id;
+  const placeDestinationId = destinationData.candidates[0].place_id;
+
+  // use fetch to get data in next.js
+  const directionsResponse = await fetch(
+    `${BASE_URL}/directions?originId=${placeSourceId}&destinationId=${placeDestinationId}`,
+  );
+
+  if (!directionsResponse.ok) {
+    throw new Error("Failed to fetch directions data");
+  }
+
+  const directionsData = await directionsResponse.json();
+
+  return {
+    directionsData,
+    placeSourceId,
+    placeDestinationId,
+  };
+}
+
+export default async function NewRoutePage({
+  searchParams,
+}: NewRoutePageProps) {
   const { source, destination } = await searchParams;
 
   const result =
@@ -124,9 +174,7 @@ const NewRoutePage = async ({ searchParams }: NewRoutePageProps) => {
         )}
       </div>
 
-      <div>Mapa</div>
+      <MapNewRoute directionsData={directionsData} />
     </div>
   );
-};
-
-export default NewRoutePage;
+}
