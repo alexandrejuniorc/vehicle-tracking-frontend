@@ -9,7 +9,7 @@ export function useMap(containerRef: React.RefObject<HTMLDivElement>) {
   useEffect(() => {
     (async () => {
       const loader = new Loader({
-        apiKey: "AIzaSyDd1ZbviLytkPCcxrhMQwkwliw9eNIRzMI" as string,
+        apiKey: process.env.GOOGLE_MAPS_API_KEY as string,
         libraries: ["routes", "geometry", "marker"],
       });
 
